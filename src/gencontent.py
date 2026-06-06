@@ -17,7 +17,7 @@ def extract_title(markdown_text):
     raise Exception("no title found in markdown text")
 
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
 
     # open and read (store in memory) the source file
@@ -38,6 +38,13 @@ def generate_page(from_path, template_path, dest_path):
     # converted markdown inserted into the template file
     replaced_title = contents_template.replace("{{ Title }}", title)
     replaced_html_string = replaced_title.replace("{{ Content }}", html_string)
+
+    # **** Swaps the root-absolute paths (href="/ and src="/) so they point to the
+    # repo subfolder on GitHub Pages instead of the domain root.
+    # e.g. href="/index.css" becomes href="/Static_Site_Generator/index.css"
+    # The browser adds the domain (https://Johnnydeeps.github.io) on its own. ****
+    replaced_html_string = replaced_html_string.replace('href="/', f'href="{basepath}')
+    replaced_html_string = replaced_html_string.replace('src="/', f'src="{basepath}')
 
     # takes the full path to a file ie. public/blog/majesty/index.html and removes the file name
     # leaving just the full path in the project folder and stores the path as a string in dir_name.
@@ -62,7 +69,7 @@ def generate_page(from_path, template_path, dest_path):
     open_dest_path_file.close()
 
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
     # create an iterable list of strings corresponding to the files and directories at the specified
     # filepath string passed in as an argument to generate_pages_recursive() ie. dir_path_content
     filenames = os.listdir(dir_path_content)
@@ -81,10 +88,10 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
         if os.path.isfile(full_path_content):
             path_object = Path(full_path_destination)
             path_object_html = path_object.with_suffix(".html")
-            generate_page(full_path_content, template_path, path_object_html)
+            generate_page(full_path_content, template_path, path_object_html, basepath)
         # if filename in the above for loop is not a file, else: triggers recursively until we find
         # another file.
         else:
             generate_pages_recursive(
-                full_path_content, template_path, full_path_destination
+                full_path_content, template_path, full_path_destination, basepath
             )
